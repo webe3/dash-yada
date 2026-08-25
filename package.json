@@ -1,6 +1,6 @@
 {
   "name": "dash-yada",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "Dash Yada, an interactive dashboard assistant",
     "repository": {
         "type": "git",
@@ -20,7 +20,7 @@
         "eslint-plugin-react": "^7.32.2",
     "npm-run-all": "^4.1.5",
     "@babel/cli": "^7.21.5",
-        "@babel/core": "^7.21.5",
+        "@babel/core": "^7.29.7",
         "@babel/eslint-parser": "^7.21.3",
         "@babel/plugin-syntax-dynamic-import": "^7.8.3",
         "@babel/preset-env": "^7.21.5",

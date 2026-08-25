@@ -38,8 +38,14 @@ class YadaAIO(html.Div):
     - scripts (dict of list of dicts; optional):
         Dictionary of keys to scripts:
             - each key will have an array of a directory:
-            {target (string; required), convo (string; required), action (string; optional),
-            action_args (string; optional)}
+            {target (string; required), convo (string; optional), show_text (bool; optional),
+            highlight_target (bool; optional),
+            action (string; optional), action_args (string|dict; optional)}
+            - when show_text is False (or convo is blank), action steps run without showing text
+            - when highlight_target is False, yada will not highlight or move to the target
+            - set_props action_args supports either:
+                {"id": "<component-id>", "props": {"<prop>": <value>}}
+              or a direct prop mapping when target is an id selector (for example "#my-input")
 
     - next_button_props (dict; optional):
         Props to control the options for the next button. dbc.Button props.
@@ -79,6 +85,11 @@ class YadaAIO(html.Div):
         active_body = lambda yada_id: {
             "component": "YadaAIO",
             "subcomponent": "active_body",
+            "yada_id": yada_id,
+        }
+        active_body_has_static_actions = lambda yada_id: {
+            "component": "YadaAIO",
+            "subcomponent": "active_body_has_static_actions",
             "yada_id": yada_id,
         }
         scripts = lambda yada_id: {
@@ -184,9 +195,44 @@ class YadaAIO(html.Div):
                 script_message["message"] = "What would you like to do?"
             if script_message.get("style") is None:
                 script_message["style"] = {}
+            if script_message.get("show_no_scripts_message") is None:
+                script_message["show_no_scripts_message"] = True
         else:
             script_message["message"] = "What would you like to do?"
             script_message["style"] = {}
+            script_message["show_no_scripts_message"] = True
+
+        custom_action_children = script_message.get("children") is not None
+        show_no_scripts_message = bool(script_message.get("show_no_scripts_message", True))
+        active_body_children = script_message.get("children")
+        if active_body_children is None:
+            active_body_children = [
+                html.Div(
+                    children=[
+                        html.Div(script_message["message"]),
+                        dcc.Dropdown(
+                            id=self.ids.script_choices(yada_id),
+                            style={"minWidth": 250},
+                        ),
+                        dbc.Button(
+                            **play_script_props,
+                            id=self.ids.play_script(yada_id)
+                        ),
+                    ],
+                    className="data_message",
+                )
+            ]
+        elif isinstance(active_body_children, tuple):
+            active_body_children = list(active_body_children)
+        elif not isinstance(active_body_children, list):
+            active_body_children = [active_body_children]
+
+        if show_no_scripts_message:
+            active_body_children.append(
+                html.Div(
+                    "Sorry, there are no scripts loaded", className="no_message"
+                )
+            )
 
         if next_button_props.get("children") is None:
             next_button_props["children"] = "next"
@@ -246,6 +292,10 @@ class YadaAIO(html.Div):
             ),
             dcc.Store(id=self.ids.scripts(yada_id), data=scripts),
             dcc.Store(
+                id=self.ids.active_body_has_static_actions(yada_id),
+                data=custom_action_children,
+            ),
+            dcc.Store(
                 id=self.ids.hover_message_greeting(yada_id),
                 data=hover_message_dict["greeting"],
             ),
@@ -269,26 +319,8 @@ class YadaAIO(html.Div):
             ),
             dbc.Popover(
                 dbc.PopoverBody(
-                    [
-                        html.Div(
-                            children=[
-                                html.Div(script_message["message"]),
-                                dcc.Dropdown(
-                                    id=self.ids.script_choices(yada_id),
-                                    style={"minWidth": 250},
-                                ),
-                                dbc.Button(
-                                    **play_script_props,
-                                    id=self.ids.play_script(yada_id)
-                                ),
-                            ],
-                            className="data_message",
-                        ),
-                        html.Div(
-                            "Sorry, there are no scripts loaded", className="no_message"
-                        ),
-                    ],
-                    className="data" if scripts != {} else "no_data",
+                    active_body_children,
+                    className="data" if (scripts != {} or custom_action_children) else "no_data",
                     id=self.ids.active_body(yada_id),
                     style=script_message["style"],
                 ),
@@ -404,8 +436,11 @@ class YadaAIO(html.Div):
 
     clientside_callback(
         """
-            function (s, d) {
+            function (s, d, hasStaticActions) {
                 if (s) {
+                    if (hasStaticActions === true) {
+                        return 'data'
+                    }
                     if (Object.keys(d).length > 0) {
                         return 'data'
                     } else {
@@ -418,6 +453,7 @@ class YadaAIO(html.Div):
         Output(ids.active_body(MATCH), "className"),
         Input(ids.active_message(MATCH), "is_open"),
         State(ids.scripts(MATCH), "data"),
+        State(ids.active_body_has_static_actions(MATCH), "data"),
         prevent_initial_call=True,
     )
 

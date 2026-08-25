@@ -70,7 +70,7 @@ app.layout = dbc.Container(
 )
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
 
 ```
 
@@ -132,6 +132,9 @@ yada = YadaAIO(yada_id="my_yada", yada_src=yada_img, hover_message_dict=hover_me
 
 ---
 
+Script playback and editing are available in `dash-yada-pro`.
+Use `YadaProAIO` and `ScriptEditorAIO` for guided tours and the built-in scripts editor.
+
 You can add one or more scripts for the user to select the tour.
 
 Yada navigates by CSS selector, so it can go to any element on a page.  Learn more about selectors at [Mozilla web-docs](https://developer.mozilla.org/en-US/docs/Web/API/Document/querySelector)
@@ -140,12 +143,95 @@ For example you could use a component's `id` prop like this:  `"#component_id"`.
 
 - `scripts` (dict of list of dicts; optional):  Dictionary of keys to scripts:
     - each key will have an array of:
-    {target (string; required), convo (string; required), action (string; optional), action_args (string; optional)}
+    {target (string; required), convo (string; optional), show_text (bool; optional), highlight_target (bool; optional), action (string; optional), action_args (string|dict; optional)}
+    - If `show_text=False` (or `convo=""`), the step runs as an automation and won't show step text.
+    - If `highlight_target=False`, the step runs without adding the highlight ring and Yada will not move to that target.
+    - `set_props` action supports:
+      - `action_args={"id": "<component-id>", "props": {"value": "new value"}}`
+      - or direct props in `action_args` when `target` is an id selector (for example `"#my-input"`).
 
 
 Here is a simple example of one script with one step. You can find more script examples in the demo app: [yada_scripts.py file](https://github.com/BSd3v/dash-yada/blob/dev/docs/demo/yada_scripts.py)
 
 ![yada_quickstart_script](https://github.com/BSd3v/dash-yada/assets/72614349/6971c5c7-cddb-4418-8853-64951384b7af)
+
+#### Script Action Examples
+
+Use the `action` field on a step to automate interactions:
+
+- `click` to click an element
+- `dblclick` to double click an element
+- `type` to set an input value
+- `sendKeys` to dispatch keyboard events
+- `set_props` to update Dash component props directly
+
+```python
+scripts = {
+    "Action Examples": [
+        {
+            "target": "#save-btn",
+            "convo": "Click a button",
+            "action": "click",
+        },
+        {
+            "target": "#name-input",
+            "convo": "Type into an input",
+            "action": "type",
+            "action_args": "Alice",
+        },
+        {
+            "target": "#rows-grid .ag-row[row-index=\"2\"] .ag-cell[aria-colindex=\"3\"]",
+            "convo": "Double-click to open inline edit",
+            "action": "dblclick",
+        },
+        {
+            "target": "#rows-grid .ag-cell-editor input",
+            "convo": "Send Enter key to commit edit",
+            "action": "sendKeys",
+            "action_args": {
+                "key": "Enter",
+                "code": "Enter",
+                "keyCode": 13,
+            },
+        },
+        {
+            "target": "#search-input",
+            "convo": "Use keyboard modifiers (Ctrl+A)",
+            "action": "sendKeys",
+            "action_args": {
+                "ctrlKey": True,
+                "key": "a",
+                "code": "KeyA",
+                "keyCode": 65,
+            },
+        },
+        {
+            "target": "#status-message",
+            "convo": "Update component props directly",
+            "action": "set_props",
+            "action_args": {
+                "props": {
+                    "children": "Saved successfully",
+                    "style": {"color": "green", "fontWeight": 700},
+                }
+            },
+            "show_text": False,
+        },
+        {
+            "target": "#search-input",
+            "convo": "You can also pass direct props when target is an id selector",
+            "action": "set_props",
+            "action_args": {
+                "value": "Africa",
+                "placeholder": "Filter by region",
+            },
+            "show_text": False,
+        },
+    ]
+}
+```
+
+For `click` and `dblclick`, optional `action_args` can include event flags such as `shiftKey`, `ctrlKey`, `altKey`, and `metaKey`.
 
 
 
@@ -182,7 +268,7 @@ app.layout = dbc.Container(
 )
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
 ```
 
 <br>
@@ -250,7 +336,7 @@ app.layout = dbc.Container(
 )
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run(debug=True)
 
 ```
 
@@ -287,8 +373,9 @@ dash-yada.YadaAIO is an All-In-One component.  Learn more about AIO components i
     - scripts (dict of list of dicts; optional):
         Dictionary of keys to scripts:
             - each key will have an array of a directory:
-            {target (string; required), convo (string; required), action (string; optional),
-            action_args (string; optional)}
+            {target (string; required), convo (string; optional), show_text (bool; optional),
+            highlight_target (bool; optional),
+            action (string; optional), action_args (string|dict; optional)}
 
     - next_button_props (dict; optional):
         Props to control the options for the next button. dbc.Button props.
