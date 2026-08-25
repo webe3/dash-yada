@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "na-ss2"
+version = "0.0.2.dev0"
+description = "An interactive dashboard assistant"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "BSd3v" },
+    { name = "Brent S. Elmer, Ph.D.", email = "brent.elmer@bayer.com" },
+]
+license = "LicenseRef-Proprietary"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Optimization",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+]
+
+[tool.uv.sources]
+
+[tool.zest-releaser]
+history-file = "CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "flake8> = 7.3.0",
+    "pylint> = 4.0.5",
+]
